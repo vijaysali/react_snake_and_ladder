@@ -6,37 +6,84 @@ class App extends Component {
     constructor(props) {
 	super(props);
 	this.state = {
-	    player1: {name: "Player1", position: 1, turn: true},
-	    player2: {name: "Player2", position: 1, turn: false},
+	    players: { player1: null,
+		       player2: null},
 	    diceValue: 0,
 	    setup: false,
+	    snakeAndLadder: {59: 10, 83: 35, 13: 43, 56: 90},
+	    currentTurn: null,
+	    playersIterator: null
 	}
 	this.playDice = this.playDice.bind(this);
 	this.generateTable = this.generateTable.bind(this);
+	this.playerInformation = this.playerInformation.bind(this);
+	this.nextPlayer = this.nextPlayer.bind(this);
+	this.movePlayer = this.movePlayer.bind(this);
+	this.initializeGame = this.initializeGame.bind(this);
+    }
+
+    movePlayer(diceValue) {
+	if (this.state.players[this.state.currentTurn] < 100) {
+	    var newPosition = this.state.players[this.state.currentTurn] + diceValue
+	    return this.state.snakeAndLadder[newPosition] ? this.state.snakeAndLadder[newPosition] : newPosition
+	}
     }
 
     playDice() {
-	this.setState({diceValue: Math.floor((Math.random() * 12) + 1)})
-	//this.setState((prevState) => ({
-	//    diceValue : Math.floor((Math.random() * 12) + 1)}));
+	if (this.state.players[this.state.currentTurn] > 100) {
+	    alert("This game has won by "+ this.state.currentTurn );
+	    this.initializeGame();
+	}
+	else {
+	    var rolledValue = Math.floor((Math.random() * 12) + 1)
+	    this.setState({diceValue: rolledValue,
+			   players: Object.assign(this.state.players, {[this.state.currentTurn]: this.movePlayer(rolledValue)})})
+	    this.nextPlayer();
+	    this.generateTable(100, {});
+	}
     }
 
-    componentDidMount () {
+    nextPlayer() {
+	var playersSize = this.state.playersIterator.length;
+	var currentIndex = this.state.playersIterator.indexOf(this.state.currentTurn);
+	//debugger;
+	this.setState({currentTurn: this.state.playersIterator[(currentIndex % playersSize) + 1]})
+    }
+
+    initializeGame() {
 	this.setState({
 	    diceValue: 0,
-	    setup: false})
+	    setup: false,
+	    players: {player1: 1, player2: 1},
+	    playersIterator: Object.keys(this.state.players),
+	    currentTurn: Object.keys(this.state.players)[0]})
     }
+    componentDidMount () {
+	this.initializeGame();
+    }
+
+    playerInformation () {
+	// Pending: Read
+	// use of arrow(=>) function preserves the state.
+	// use of function {} looses the state.
+	return Object.keys(this.state.players).map((key) => { return <div key={key}> {key}/ {this.state.players[key]}</div>});
+    }
+
     generateTable (tableSize, data) {
 	var table_cells = []
 	for (var i = tableSize ; i > 0 ; i --) {
-	    if (i === data.players.p1) {
-		table_cells.push(<div class="board"><b>##{data.players.p1}##</b></div>)
+	    // if (i === data.players.p1) {
+	    // 	table_cells.push(<div key = {i} class="board"><b>##{data.players.p1}##</b></div>)
+	    // }
+	    // else if (i === data.players.p2) {
+	    // 	table_cells.push(<div key = {i} class="board"><b>##{data.players.p2}##</b></div>)
+	    // }
+	    // else{
+	    if (Object.keys(this.state.players).map((playerName) => {this.state.players[playerName]}).includes(i)) {
+		table_cells.push(<div key = {i} class="board"><b>####</b></div>)
 	    }
-	    else if (i === data.players.p2) {
-		table_cells.push(<div class="board"><b>##{data.players.p2}##</b></div>)
-	    }
-	    else{
-		table_cells.push(<div class="board">{i}</div>)
+	    else {
+		table_cells.push(<div key={i} class="board">{i}</div>)
 	    }
 	}
 	return table_cells
@@ -45,11 +92,11 @@ class App extends Component {
   render() {
       return (
 	      <div className="App">
-
-	      <div> Player1: {this.state.player1.name === "" ? "Noname":  this.state.player1.name} / {this.state.player1.position}</div>
-	      <div> Player1: {this.state.player2.name === "" ? "Noname":  this.state.player2.name} / {this.state.player2.position}</div>
+	      <div>
+	      {this.playerInformation()}
+	  </div>
 	      <div> {this.state.diceValue} </div>
-	      <div> Play dice: <button onClick={this.playDice}>Click</button></div>
+	      <div> Play dice: <button onClick={() => this.playDice()}>Click</button></div>
 	      <div class="board-wrap">
 	      {this.generateTable(100, {players: {p1: 10, p2: 50}})}
 	  </div>
