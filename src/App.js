@@ -12,8 +12,12 @@ class App extends Component {
 	    setup: false,
 	    snakeAndLadder: {59: 10, 83: 35, 13: 43, 56: 90},
 	    currentTurn: null,
-	    playersIterator: null
+	    playersIterator: null,
+	    maxCellLimit: 100,
+	    gameWinner: null,
+	    maxDiceValue: 6
 	}
+
 	this.playDice = this.playDice.bind(this);
 	this.generateTable = this.generateTable.bind(this);
 	this.playerInformation = this.playerInformation.bind(this);
@@ -23,32 +27,34 @@ class App extends Component {
     }
 
     movePlayer(diceValue) {
-	if (this.state.players[this.state.currentTurn] < 100) {
+	if (this.state.players[this.state.currentTurn] < this.state.maxCellLimit) {
 	    var newPosition = this.state.players[this.state.currentTurn] + diceValue
 	    return this.state.snakeAndLadder[newPosition] ? this.state.snakeAndLadder[newPosition] : newPosition
 	}
     }
 
-    playDice() {
-	if (this.state.players[this.state.currentTurn] > 100) {
-	    alert("This game has won by "+ this.state.currentTurn );
+    playDice(e) {
+	e.preventDefault();
+	if (this.state.gameWinner) {
+	    alert("This game has won by "+ this.state.gameWinner );
 	    this.initializeGame();
 	}
 	else {
-	    var rolledValue = Math.floor((Math.random() * 12) + 1)
+	    var rolledValue = Math.floor((Math.random() * this.state.maxDiceValue) + 1)
+	    if (this.movePlayer(rolledValue) >= this.state.maxCellLimit) {
+	    this.setState({gameWinner: this.state.currentTurn});
+	    }
 	    this.setState({diceValue: rolledValue,
 			   players: Object.assign(this.state.players, {[this.state.currentTurn]: this.movePlayer(rolledValue)})})
 	    this.nextPlayer();
 	}
-	console.log("executing from playDice");
-	this.generateTable(100, {});
+	this.generateTable();
     }
 
     nextPlayer() {
 	var playersSize = this.state.playersIterator.length;
-	var currentIndex = this.state.playersIterator.indexOf(this.state.currentTurn);
-	//debugger;
-	this.setState({currentTurn: this.state.playersIterator[(currentIndex % playersSize) + 1]})
+	var currentIndex = this.state.playersIterator.indexOf(this.state.currentTurn)
+	this.setState({currentTurn: this.state.playersIterator[(currentIndex + 1) % playersSize]})
     }
 
     initializeGame() {
@@ -61,20 +67,17 @@ class App extends Component {
     }
 
     playerInformation () {
-	// Pending: Read
-	// use of arrow(=>) function preserves the state.
-	// use of function {} looses the state.
+	// Pending: Read, arrow(=>) and function. to check state
 	return Object.keys(this.state.players).map((key) => { return <div key={key}> {key}/ {this.state.players[key]}</div>});
     }
 
-    generateTable (tableSize, data) {
-	console.log("generateTable");
+    generateTable () {
 	var table_cells = []
 	var playerPosition = (Object.keys(this.state.players).map((playerName) => {return this.state.players[playerName]}))
-	console.log(playerPosition, "playerPos");
-	for (var i = tableSize ; i > 0 ; i --) {
+	for (var i = this.state.maxCellLimit ; i > 0 ; i --) {
 	    if (playerPosition.includes(i)) {
-		table_cells.push(<div key = {i} class="board"><b>{Object.keys(this.state.players).find((playerName) => {return this.state.players[playerName]})}</b></div>)
+		table_cells.push(<div key = {i} class="players"><b>{Object.keys(this.state.players).filter((playerName) =>
+													 {return this.state.players[playerName] === i})}</b></div>)
 	    }
 	    else {
 		table_cells.push(<div key={i} class="board">{i}</div>)
@@ -91,13 +94,11 @@ class App extends Component {
     render() {
 	return (
 		<div className="App">
-		<div>
-		{this.playerInformation()}
-	    </div>
-		<div> {this.state.diceValue} </div>
-		<div> Play dice: <button onClick={() => this.playDice()}>Click</button></div>
+		<div>{this.playerInformation()}</div>
+		<div><p> Dice value:{this.state.diceValue}</p>
+		<p><button onClick={(e) => this.playDice(e)}>Role Dice</button></p></div>
 		<div class="board-wrap">
-		{this.generateTable(100, {players: {p1: 10, p2: 50}})}
+		{this.generateTable()}
 	    </div>
 		</div>);
     }
